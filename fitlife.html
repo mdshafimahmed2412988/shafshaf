@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FitLife">
+<meta name="theme-color" content="#0f172a">
+<title>FitLife — Your Plan</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --bg2: #1e293b;
+    --bg3: #334155;
+    --card: #1e293b;
+    --border: #334155;
+    --accent: #22d3ee;
+    --accent2: #a78bfa;
+    --green: #4ade80;
+    --red: #f87171;
+    --amber: #fbbf24;
+    --text: #f1f5f9;
+    --text2: #94a3b8;
+    --text3: #64748b;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; overflow:hidden; }
+  
+  /* LAYOUT */
+  #app { display:flex; flex-direction:column; height:100vh; height:100dvh; }
+  #screen-wrap { flex:1; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; scroll-behavior:smooth; }
+  
+  /* SCREENS */
+  .screen { display:none; padding:16px 16px 100px; min-height:100%; }
+  .screen.active { display:block; }
+  
+  /* BOTTOM NAV */
+  #nav { position:fixed; bottom:0; left:0; right:0; background:var(--bg2); border-top:1px solid var(--border); display:flex; z-index:100; padding-bottom:env(safe-area-inset-bottom); }
+  .nav-btn { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:10px 4px 8px; border:none; background:none; color:var(--text3); font-size:10px; cursor:pointer; transition:color 0.15s; }
+  .nav-btn svg { width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .nav-btn.active { color:var(--accent); }
+  
+  /* HEADER */
+  .page-header { margin-bottom:20px; }
+  .page-header h1 { font-size:22px; font-weight:700; color:var(--text); }
+  .page-header p { font-size:13px; color:var(--text2); margin-top:3px; }
+  
+  /* CARDS */
+  .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:12px; }
+  .card-title { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--text3); margin-bottom:10px; }
+  
+  /* PILLS / TAGS */
+  .pill { display:inline-block; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:500; }
+  .pill-green { background:rgba(74,222,128,0.15); color:var(--green); }
+  .pill-red { background:rgba(248,113,113,0.15); color:var(--red); }
+  .pill-amber { background:rgba(251,191,36,0.15); color:var(--amber); }
+  .pill-cyan { background:rgba(34,211,238,0.15); color:var(--accent); }
+  .pill-purple { background:rgba(167,139,250,0.15); color:var(--accent2); }
+  
+  /* STAT GRID */
+  .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+  .stat-box { background:var(--bg3); border-radius:var(--radius-sm); padding:12px; }
+  .stat-val { font-size:20px; font-weight:700; color:var(--text); }
+  .stat-lbl { font-size:11px; color:var(--text2); margin-top:2px; }
+  .stat-box.accent { background:linear-gradient(135deg,rgba(34,211,238,0.2),rgba(167,139,250,0.2)); border:1px solid rgba(34,211,238,0.3); }
+  
+  /* SCHEDULE ROW */
+  .sched-row { display:flex; align-items:flex-start; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
+  .sched-row:last-child { border-bottom:none; }
+  .sched-time { font-size:12px; color:var(--accent); font-weight:600; min-width:52px; padding-top:1px; }
+  .sched-body { flex:1; }
+  .sched-body strong { font-size:14px; color:var(--text); display:block; }
+  .sched-body span { font-size:12px; color:var(--text2); line-height:1.5; }
+  .sched-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+  
+  /* MEAL TABS */
+  .tab-row { display:flex; gap:8px; margin-bottom:14px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
+  .tab-row::-webkit-scrollbar { display:none; }
+  .tab-btn { padding:6px 14px; border-radius:20px; border:1px solid var(--border); background:none; color:var(--text2); font-size:13px; white-space:nowrap; cursor:pointer; transition:all 0.15s; }
+  .tab-btn.active { background:var(--accent); color:#0f172a; border-color:var(--accent); font-weight:600; }
+  
+  /* MEAL CARD */
+  .meal-block { background:var(--bg3); border-radius:var(--radius-sm); padding:14px; margin-bottom:10px; }
+  .meal-block h3 { font-size:15px; font-weight:600; color:var(--text); margin-bottom:4px; }
+  .meal-block p { font-size:13px; color:var(--text2); line-height:1.6; }
+  .meal-cal { font-size:12px; color:var(--accent); font-weight:600; margin-top:6px; }
+  
+  /* WORKOUT */
+  .workout-item { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--border); }
+  .workout-item:last-child { border-bottom:none; }
+  .w-num { width:28px; height:28px; border-radius:50%; background:rgba(34,211,238,0.15); color:var(--accent); font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .w-body { flex:1; }
+  .w-body strong { font-size:14px; color:var(--text); display:block; }
+  .w-body span { font-size:12px; color:var(--text2); }
+  .w-badge { font-size:11px; background:rgba(167,139,250,0.15); color:var(--accent2); padding:2px 8px; border-radius:10px; }
+  
+  /* PROGRESS */
+  .progress-bar-wrap { background:var(--bg3); border-radius:10px; height:8px; overflow:hidden; margin-top:6px; }
+  .progress-bar { height:100%; border-radius:10px; background:linear-gradient(90deg,var(--accent),var(--accent2)); transition:width 0.5s ease; }
+  
+  /* INPUTS */
+  input, select, textarea { background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:14px; padding:10px 12px; width:100%; outline:none; font-family:inherit; }
+  input:focus, select:focus, textarea:focus { border-color:var(--accent); }
+  input::placeholder, textarea::placeholder { color:var(--text3); }
+  label { font-size:13px; color:var(--text2); display:block; margin-bottom:6px; margin-top:14px; }
+  label:first-child { margin-top:0; }
+  
+  /* BUTTONS */
+  .btn { display:block; width:100%; padding:13px; border-radius:var(--radius-sm); border:none; font-size:15px; font-weight:600; cursor:pointer; transition:opacity 0.15s; }
+  .btn:active { opacity:0.8; }
+  .btn-primary { background:var(--accent); color:#0f172a; }
+  .btn-secondary { background:var(--bg3); color:var(--text); border:1px solid var(--border); margin-top:8px; }
+  .btn-red { background:rgba(248,113,113,0.2); color:var(--red); border:1px solid rgba(248,113,113,0.3); margin-top:8px; }
+  
+  /* ALLOW/AVOID LIST */
+  .aa-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .aa-box { border-radius:var(--radius-sm); padding:12px; }
+  .aa-box.allow { background:rgba(74,222,128,0.08); border:1px solid rgba(74,222,128,0.2); }
+  .aa-box.avoid { background:rgba(248,113,113,0.08); border:1px solid rgba(248,113,113,0.2); }
+  .aa-box h4 { font-size:12px; font-weight:700; margin-bottom:8px; }
+  .aa-box.allow h4 { color:var(--green); }
+  .aa-box.avoid h4 { color:var(--red); }
+  .aa-box ul { list-style:none; }
+  .aa-box ul li { font-size:12px; color:var(--text2); padding:3px 0; line-height:1.4; }
+  .aa-box.allow ul li::before { content:"✓ "; color:var(--green); font-weight:700; }
+  .aa-box.avoid ul li::before { content:"✗ "; color:var(--red); font-weight:700; }
+  
+  /* LOG ENTRIES */
+  .log-entry { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--border); }
+  .log-entry:last-child { border-bottom:none; }
+  .log-date { font-size:11px; color:var(--text3); min-width:48px; text-align:center; }
+  .log-date strong { display:block; font-size:18px; color:var(--text); font-weight:700; }
+  .log-body { flex:1; }
+  .log-body strong { font-size:14px; color:var(--text); }
+  .log-body span { font-size:12px; color:var(--text2); display:block; }
+  .log-kg { font-size:16px; font-weight:700; color:var(--accent); }
+  
+  /* TIP BOX */
+  .tip { background:rgba(34,211,238,0.08); border:1px solid rgba(34,211,238,0.2); border-radius:var(--radius-sm); padding:12px 14px; font-size:13px; color:var(--text2); line-height:1.6; margin-bottom:12px; }
+  .tip strong { color:var(--accent); }
+  
+  /* TIMELINE DOT */
+  .timeline { position:relative; padding-left:20px; }
+  .timeline::before { content:''; position:absolute; left:6px; top:8px; bottom:8px; width:1px; background:var(--border); }
+  .tl-item { position:relative; padding:0 0 16px 16px; }
+  .tl-item::before { content:''; position:absolute; left:-14px; top:6px; width:8px; height:8px; border-radius:50%; background:var(--accent); border:2px solid var(--bg); }
+  .tl-item.done::before { background:var(--green); }
+  .tl-item h4 { font-size:14px; color:var(--text); font-weight:600; }
+  .tl-item p { font-size:12px; color:var(--text2); margin-top:2px; line-height:1.5; }
+  
+  /* CALORIE LINK */
+  .calorie-btn { display:flex; align-items:center; gap:10px; background:linear-gradient(135deg,rgba(34,211,238,0.15),rgba(167,139,250,0.15)); border:1px solid rgba(34,211,238,0.3); border-radius:var(--radius); padding:16px; text-decoration:none; color:var(--text); margin-bottom:12px; }
+  .calorie-btn .c-icon { width:44px; height:44px; border-radius:10px; background:rgba(34,211,238,0.2); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+  .calorie-btn .c-text strong { display:block; font-size:15px; font-weight:600; }
+  .calorie-btn .c-text span { font-size:12px; color:var(--text2); }
+  
+  /* SECTION DIVIDER */
+  .divider { border:none; border-top:1px solid var(--border); margin:16px 0; }
+  
+  /* WELCOME */
+  #welcome { position:fixed; inset:0; background:var(--bg); z-index:200; display:flex; flex-direction:column; justify-content:center; padding:32px 24px; }
+  #welcome h1 { font-size:28px; font-weight:800; color:var(--text); margin-bottom:6px; }
+  #welcome p { font-size:15px; color:var(--text2); margin-bottom:24px; line-height:1.6; }
+  #welcome.hidden { display:none; }
+  
+  /* CHART MINI */
+  .mini-chart { width:100%; height:80px; }
+  
+  /* SCROLLBAR */
+  #screen-wrap::-webkit-scrollbar { width:4px; }
+  #screen-wrap::-webkit-scrollbar-track { background:transparent; }
+  #screen-wrap::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+  
+  .section-head { font-size:16px; font-weight:700; color:var(--text); margin:18px 0 10px; }
+  .inline-row { display:flex; gap:8px; }
+  .inline-row input { flex:1; }
+  
+  .badge-row { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  
+  .empty-state { text-align:center; padding:32px 16px; color:var(--text3); font-size:14px; }
+  .empty-state span { font-size:36px; display:block; margin-bottom:10px; }
+</style>
+</head>
+<body>
+
+<!-- WELCOME / ONBOARDING -->
+<div id="welcome">
+  <div style="font-size:48px;margin-bottom:16px;">💪</div>
+  <h1>Hey! Let's set up your plan.</h1>
+  <p>This app is built around your life — video editor in Birmingham, desk job, car commute, 90kg target goal. Let's personalise it quickly.</p>
+  <label>Your name</label>
+  <input type="text" id="w-name" placeholder="e.g. Zain" style="margin-bottom:12px;">
+  <label>Current weight (kg)</label>
+  <input type="number" id="w-weight" placeholder="e.g. 90" style="margin-bottom:12px;">
+  <label>Target weight (kg)</label>
+  <input type="number" id="w-target" placeholder="e.g. 75" style="margin-bottom:20px;">
+  <button class="btn btn-primary" onclick="saveWelcome()">Let's go →</button>
+</div>
+
+<!-- APP SHELL -->
+<div id="app" style="display:none;">
+  <div id="screen-wrap">
+
+    <!-- HOME -->
+    <div class="screen active" id="screen-home">
+      <div class="page-header">
+        <h1 id="home-greeting">Good morning 👋</h1>
+        <p id="home-sub">Birmingham, UK • Today's overview</p>
+      </div>
+
+      <!-- Stats -->
+      <div class="stat-grid">
+        <div class="stat-box accent">
+          <div class="stat-val" id="stat-cw">90 kg</div>
+          <div class="stat-lbl">Current weight</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="stat-tw">75 kg</div>
+          <div class="stat-lbl">Target weight</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="stat-lost">0 kg</div>
+          <div class="stat-lbl">Lost so far</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="stat-days">0</div>
+          <div class="stat-lbl">Day streak 🔥</div>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="card" style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span class="card-title" style="margin:0;">Journey progress</span>
+          <span id="prog-pct" style="font-size:13px;color:var(--accent);font-weight:600;">0%</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar" id="prog-bar" style="width:0%"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;">
+          <span style="font-size:11px;color:var(--text3);" id="prog-start">Start</span>
+          <span style="font-size:11px;color:var(--text3);" id="prog-end">Target</span>
+        </div>
+      </div>
+
+      <!-- Today's schedule -->
+      <div class="card">
+        <div class="card-title">Your day schedule</div>
+        <div class="sched-row">
+          <div class="sched-time">6:30</div>
+          <div class="sched-icon" style="background:rgba(251,191,36,0.15);">🌅</div>
+          <div class="sched-body"><strong>Wake up</strong><span>Drink warm lemon water (250ml) immediately. No phone for 10 mins.</span></div>
+        </div>
+        <div class="sched-row">
+          <div class="sched-time">6:40</div>
+          <div class="sched-icon" style="background:rgba(74,222,128,0.15);">🏃</div>
+          <div class="sched-body"><strong>Morning workout</strong><span>20 min home workout or walk — before shower. Key fat burn window.</span></div>
+        </div>
+        <div class="sched-row">
+          <div class="sched-time">7:10</div>
+          <div class="sched-icon" style="background:rgba(34,211,238,0.15);">🍳</div>
+          <div class="sched-body"><strong>Breakfast</strong><span>High protein. Eat before 7:30. Never skip — long drive ahead.</span></div>
+        </div>
+        <div class="sched-row">
+          <div class="sched-time">7:30</div>
+          <div class="sched-icon" style="background:rgba(167,139,250,0.15);">🚗</div>
+          <div class="sched-body"><strong>Drive to work</strong><span>No energy drinks. Green tea in a travel mug is fine.</span></div>
+        </div>
+        <div class="sched-row">
+          <div class="sched-time">9:00</div>
+          <div class="sched-icon" style="background:rgba(34,211,238,0.15);">💻</div>
+          <div class="sched-body"><strong>Work starts</strong><span>Desk job tip: stand up every 45 mins, walk to kitchen for water.</span></div>
+        </div>
+        <div class="sched-row">
+          <div class="sched-time">12:30</div>
+          <div class="sched-icon" style="background:rgba(34,211,238,0.15);">🥗</div>
+          <div class="sched-body"><strong>Lunch</strong><span>Target 480–520 kcal. Lean protein + veg + small carbs. No heavy meal.</span></div>
+        </div>
+        <div class="sched-row">
+          <div class="sched-time">15:30</div>
+          <div class="sched-icon" style="background:rgba(251,191,36,0.15);">🍎</div>
+          <div class="sched-body"><strong>Afternoon snack</strong><span>1 banana or Greek yogurt. Keeps metabolism active for desk work.</span></div>
+        </div>
+        <div class="sched-row">
+          <div class="sched-time">17:00</div>
+          <div class="sched-icon" style="background:rgba(167,139,250,0.15);">🚗</div>
+          <div class="sched-body"><strong>Drive home</strong><span>Avoid fast food cravings on the way. Have snack ready in car.</span></div>
+        </div>
+        <div class="sched-row">
+          <div class="sched-time">18:00</div>
+          <div class="sched-icon" style="background:rgba(74,222,128,0.15);">🏠</div>
+          <div class="sched-body"><strong>Home / social time</strong><span>Friends 3x/week: stay mindful of drinks. Home: 15 min walk before sitting for extra work.</span></div>
+        </div>
+        <div class="sched-row">
+          <div class="sched-time">19:00</div>
+          <div class="sched-icon" style="background:rgba(34,211,238,0.15);">🍽️</div>
+          <div class="sched-body"><strong>Dinner</strong><span>Eat before 7:30pm. Light: protein + veg. No heavy carbs at night.</span></div>
+        </div>
+        <div class="sched-row">
+          <div class="sched-time">22:00</div>
+          <div class="sched-icon" style="background:rgba(167,139,250,0.15);">📵</div>
+          <div class="sched-body"><strong>Wind down</strong><span>No eating after 9pm. Phone down at 10:30. Sleep by 11pm for 7.5hrs.</span></div>
+        </div>
+      </div>
+
+      <!-- Daily tip -->
+      <div class="tip" id="daily-tip">
+        <strong>Desk job tip:</strong> Video editing = 10 hrs sitting. Set a timer every 45 mins to stand up, walk to get water, do 10 squats. This alone burns an extra 150–200 kcal/day.
+      </div>
+    </div>
+
+    <!-- DIET -->
+    <div class="screen" id="screen-diet">
+      <div class="page-header">
+        <h1>Diet Plan 🍽️</h1>
+        <p>1,500–1,600 kcal/day • High protein</p>
+      </div>
+
+      <!-- Calorie scanner link -->
+      <a class="calorie-btn" href="https://www.myfitnesspal.com/food/scanner" target="_blank">
+        <div class="c-icon">📷</div>
+        <div class="c-text">
+          <strong>Scan food calories</strong>
+          <span>Opens MyFitnessPal food scanner → tap camera to scan barcode or search food</span>
+        </div>
+        <svg style="width:16px;height:16px;flex-shrink:0;" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+      </a>
+
+      <!-- Day tabs -->
+      <div class="tab-row" id="diet-tabs"></div>
+      <div id="diet-content"></div>
+
+      <!-- Allow/Avoid -->
+      <div class="section-head">What to eat & avoid</div>
+      <div class="aa-grid">
+        <div class="aa-box allow">
+          <h4>✓ Eat these</h4>
+          <ul>
+            <li>Chicken breast</li>
+            <li>Eggs (boiled)</li>
+            <li>Salmon / tuna</li>
+            <li>Greek yogurt</li>
+            <li>Brown rice</li>
+            <li>Sweet potato</li>
+            <li>Oats (porridge)</li>
+            <li>Lentils / dal</li>
+            <li>Spinach / broccoli</li>
+            <li>Banana / berries</li>
+            <li>Avocado (small)</li>
+            <li>Ginger / turmeric</li>
+            <li>Green tea</li>
+            <li>Warm lemon water</li>
+            <li>Whole wheat bread</li>
+          </ul>
+        </div>
+        <div class="aa-box avoid">
+          <h4>✗ Avoid</h4>
+          <ul>
+            <li>Fried / takeaway</li>
+            <li>White bread</li>
+            <li>Sugary drinks</li>
+            <li>Energy drinks</li>
+            <li>Crisps / snacks</li>
+            <li>Alcohol</li>
+            <li>Pastries / cakes</li>
+            <li>Creamy sauces</li>
+            <li>Late night eating</li>
+            <li>Cold water w/ meals</li>
+            <li>Excess salt</li>
+            <li>Processed meats</li>
+            <li>Ice cream</li>
+            <li>Drive-thru food</li>
+            <li>Skipping breakfast</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Macros -->
+      <div class="section-head">Daily targets</div>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="stat-val" style="color:var(--accent);">1,550</div><div class="stat-lbl">Calories (kcal)</div></div>
+        <div class="stat-box"><div class="stat-val" style="color:var(--green);">150g</div><div class="stat-lbl">Protein</div></div>
+        <div class="stat-box"><div class="stat-val" style="color:var(--amber);">150g</div><div class="stat-lbl">Carbs</div></div>
+        <div class="stat-box"><div class="stat-box"><div class="stat-val" style="color:var(--accent2);">45g</div><div class="stat-lbl">Fats</div></div></div>
+      </div>
+      <div class="card" style="margin-top:4px;">
+        <div class="card-title">Metabolism tips (for you)</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.8;">
+          • Start every morning with warm lemon water<br>
+          • Add ginger to meals — boosts digestive enzymes<br>
+          • Eat slowly, chew 20x per bite<br>
+          • No water 30 mins before/after meals<br>
+          • Eat cooked/warm food — avoid raw cold salads<br>
+          • Finish dinner before 7:30pm<br>
+          • Don't skip meals — slows metabolism further
+        </div>
+      </div>
+    </div>
+
+    <!-- WORKOUT -->
+    <div class="screen" id="screen-workout">
+      <div class="page-header">
+        <h1>Workouts 💪</h1>
+        <p>Desk job adapted • 20–45 min sessions</p>
+      </div>
+
+      <div class="tip">
+        <strong>Your situation:</strong> 10hr desk job + car commute = very low NEAT. Short morning sessions + walking are your biggest weapons. No gym needed to start.
+      </div>
+
+      <div class="tab-row" id="workout-tabs"></div>
+      <div id="workout-content"></div>
+
+      <div class="section-head">Ab exercises (for six pack)</div>
+      <div class="card">
+        <div class="workout-item">
+          <div class="w-num">1</div>
+          <div class="w-body"><strong>Plank</strong><span>3 × 30–60 sec • Core foundation</span></div>
+          <div class="w-badge">Daily</div>
+        </div>
+        <div class="workout-item">
+          <div class="w-num">2</div>
+          <div class="w-body"><strong>Crunches</strong><span>3 × 20 reps • Upper abs</span></div>
+          <div class="w-badge">Daily</div>
+        </div>
+        <div class="workout-item">
+          <div class="w-num">3</div>
+          <div class="w-body"><strong>Leg raises</strong><span>3 × 15 reps • Lower abs</span></div>
+          <div class="w-badge">Daily</div>
+        </div>
+        <div class="workout-item">
+          <div class="w-num">4</div>
+          <div class="w-body"><strong>Mountain climbers</strong><span>3 × 20 reps • Full core + cardio</span></div>
+          <div class="w-badge">Daily</div>
+        </div>
+        <div class="workout-item">
+          <div class="w-num">5</div>
+          <div class="w-body"><strong>Bicycle crunches</strong><span>3 × 20 reps • Obliques</span></div>
+          <div class="w-badge">Daily</div>
+        </div>
+      </div>
+
+      <div class="section-head">Desk job moves (every 45 mins)</div>
+      <div class="card">
+        <div class="workout-item">
+          <div class="w-num">→</div>
+          <div class="w-body"><strong>10 desk squats</strong><span>Stand up from chair, sit back down × 10</span></div>
+        </div>
+        <div class="workout-item">
+          <div class="w-num">→</div>
+          <div class="w-body"><strong>20 calf raises</strong><span>Standing at your desk</span></div>
+        </div>
+        <div class="workout-item">
+          <div class="w-num">→</div>
+          <div class="w-body"><strong>Walk to get water</strong><span>Extra 200–300 steps each time</span></div>
+        </div>
+        <div class="workout-item">
+          <div class="w-num">→</div>
+          <div class="w-body"><strong>Shoulder rolls + neck stretch</strong><span>Prevents editing posture pain</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROGRESS -->
+    <div class="screen" id="screen-progress">
+      <div class="page-header">
+        <h1>My Progress 📈</h1>
+        <p>Log your weight, track milestones</p>
+      </div>
+
+      <!-- Log form -->
+      <div class="card">
+        <div class="card-title">Log today</div>
+        <div class="inline-row">
+          <div style="flex:1;">
+            <label>Weight (kg)</label>
+            <input type="number" id="log-weight" placeholder="e.g. 89.5" step="0.1">
+          </div>
+          <div style="flex:1;">
+            <label>How you feel</label>
+            <select id="log-feel">
+              <option value="💪">💪 Strong</option>
+              <option value="😊">😊 Good</option>
+              <option value="😐">😐 OK</option>
+              <option value="😴">😴 Tired</option>
+              <option value="😫">😫 Rough</option>
+            </select>
+          </div>
+        </div>
+        <label>Notes (optional)</label>
+        <input type="text" id="log-note" placeholder="e.g. Skipped dinner, walked 8k steps">
+        <button class="btn btn-primary" style="margin-top:14px;" onclick="logEntry()">Save today's log ✓</button>
+      </div>
+
+      <!-- Milestones -->
+      <div class="section-head">Milestones</div>
+      <div class="card">
+        <div class="timeline" id="milestones-list"></div>
+      </div>
+
+      <!-- Log history -->
+      <div class="section-head">Weight log</div>
+      <div class="card" id="log-history">
+        <div class="empty-state"><span>📋</span>No entries yet. Log your first weight above!</div>
+      </div>
+
+      <!-- Reset -->
+      <button class="btn btn-red" onclick="confirmReset()">Reset all data</button>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="screen" id="screen-profile">
+      <div class="page-header">
+        <h1>My Profile ⚙️</h1>
+        <p>Your stats & settings</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Personal details</div>
+        <label>Name</label>
+        <input type="text" id="p-name" placeholder="Your name">
+        <label>Current weight (kg)</label>
+        <input type="number" id="p-weight" placeholder="90" step="0.1">
+        <label>Target weight (kg)</label>
+        <input type="number" id="p-target" placeholder="75" step="0.1">
+        <label>Height</label>
+        <input type="text" id="p-height" value="5'8&quot; (173cm)" readonly style="color:var(--text3);">
+        <label>Age / Gender</label>
+        <input type="text" id="p-age" placeholder="e.g. 25, Male">
+        <button class="btn btn-primary" style="margin-top:16px;" onclick="saveProfile()">Save changes</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Your goal timeline</div>
+        <div class="tl-item" id="tl1">
+          <h4>Face slimmer 😊</h4>
+          <p>~4 weeks • Lose 3–4kg, cut sodium</p>
+        </div>
+        <div class="tl-item" id="tl2">
+          <h4>Jaw more defined 🫦</h4>
+          <p>~2 months • Lose 6–8kg total</p>
+        </div>
+        <div class="tl-item" id="tl3">
+          <h4>Flat stomach 🏋️</h4>
+          <p>~4 months • Lose 12–14kg, core training</p>
+        </div>
+        <div class="tl-item" id="tl4">
+          <h4>Visible six pack 🔥</h4>
+          <p>~6 months • Reach 13–15% body fat</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Useful links</div>
+        <a href="https://www.myfitnesspal.com" target="_blank" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);padding:8px 0;border-bottom:1px solid var(--border);">
+          <span style="font-size:20px;">📊</span>
+          <div><strong style="font-size:14px;">MyFitnessPal</strong><br><span style="font-size:12px;color:var(--text2);">Track calories & scan food</span></div>
+        </a>
+        <a href="https://www.nhs.uk/live-well/healthy-weight/bmi-calculator/" target="_blank" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);padding:8px 0;border-bottom:1px solid var(--border);">
+          <span style="font-size:20px;">🏥</span>
+          <div><strong style="font-size:14px;">NHS BMI Calculator</strong><br><span style="font-size:12px;color:var(--text2);">UK health guide</span></div>
+        </a>
+        <a href="https://www.strava.com" target="_blank" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);padding:8px 0;">
+          <span style="font-size:20px;">🏃</span>
+          <div><strong style="font-size:14px;">Strava</strong><br><span style="font-size:12px;color:var(--text2);">Track walks & runs in Birmingham</span></div>
+        </a>
+      </div>
+
+      <div class="tip" style="margin-top:4px;">
+        <strong>Install this app:</strong> Tap your browser's Share button → "Add to Home Screen" to use offline like a real app.
+      </div>
+    </div>
+
+  </div><!-- end screen-wrap -->
+
+  <!-- BOTTOM NAV -->
+  <nav id="nav">
+    <button class="nav-btn active" onclick="showScreen('home',this)">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Home
+    </button>
+    <button class="nav-btn" onclick="showScreen('diet',this)">
+      <svg viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+      Diet
+    </button>
+    <button class="nav-btn" onclick="showScreen('workout',this)">
+      <svg viewBox="0 0 24 24"><path d="M6.5 6.5h11"/><path d="M6.5 17.5h11"/><path d="M3 10h2.5M18.5 10H21M3 14h2.5M18.5 14H21"/><rect x="5" y="8" width="1.5" height="8" rx="0.75"/><rect x="17.5" y="8" width="1.5" height="8" rx="0.75"/></svg>
+      Workout
+    </button>
+    <button class="nav-btn" onclick="showScreen('progress',this)">
+      <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Progress
+    </button>
+    <button class="nav-btn" onclick="showScreen('profile',this)">
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Profile
+    </button>
+  </nav>
+</div>
+
+<script>
+// ---- DATA ----
+const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+const MEALS = [
+  { day:'Mon', tip:'Start with warm lemon water. Eat slowly.', meals:[
+    {t:'Breakfast',n:'Oat porridge + eggs',d:'½ cup oats, 2 boiled eggs, banana, green tea',c:'~380 kcal'},
+    {t:'Lunch',n:'Chicken rice bowl',d:'100g grilled chicken, ½ cup brown rice, steamed broccoli & carrots',c:'~500 kcal'},
+    {t:'Dinner',n:'Salmon + sweet potato',d:'120g baked salmon, 1 medium sweet potato, spinach',c:'~480 kcal'},
+    {t:'Snack',n:'Greek yogurt',d:'1 cup plain Greek yogurt, handful of blueberries',c:'~150 kcal'}
+  ]},
+  { day:'Tue', tip:'Chew each bite 20–25 times — helps slow digestion.', meals:[
+    {t:'Breakfast',n:'Egg toast',d:'2 scrambled eggs, 1 slice wholegrain toast, 1 orange, green tea',c:'~340 kcal'},
+    {t:'Lunch',n:'Lentil soup + bread',d:'Large bowl red lentil soup, 1 slice wholegrain bread, side salad',c:'~480 kcal'},
+    {t:'Dinner',n:'Chicken stir-fry',d:'100g chicken, mixed peppers, courgette, 1 tbsp soy sauce, ½ cup rice',c:'~470 kcal'},
+    {t:'Snack',n:'Banana + almonds',d:'1 banana, 10 almonds',c:'~190 kcal'}
+  ]},
+  { day:'Wed', tip:'No water 30 mins before/after meals — aids digestion.', meals:[
+    {t:'Breakfast',n:'Protein smoothie',d:'1 banana, 1 cup Greek yogurt, handful of oats, blended',c:'~360 kcal'},
+    {t:'Lunch',n:'Tuna salad wrap',d:'1 tin tuna, 1 wholegrain wrap, lettuce, tomato, light mayo',c:'~430 kcal'},
+    {t:'Dinner',n:'Turkey mince + veg',d:'120g turkey mince, roasted courgette, peppers, ½ cup brown rice',c:'~490 kcal'},
+    {t:'Snack',n:'Apple + peanut butter',d:'1 apple, 1 tsp natural peanut butter',c:'~150 kcal'}
+  ]},
+  { day:'Thu', tip:'Add ginger — naturally boosts digestive enzymes.', meals:[
+    {t:'Breakfast',n:'Overnight oats',d:'½ cup oats soaked overnight, chia seeds, banana, cinnamon',c:'~350 kcal'},
+    {t:'Lunch',n:'Chicken & lentil bowl',d:'80g chicken, ½ cup lentils, cucumber, tomato, olive oil dressing',c:'~510 kcal'},
+    {t:'Dinner',n:'Baked cod + veg',d:'150g baked cod, steamed green beans, carrots, 1 small potato',c:'~420 kcal'},
+    {t:'Snack',n:'Boiled egg',d:'2 boiled eggs with a pinch of salt',c:'~140 kcal'}
+  ]},
+  { day:'Fri', tip:'Rest day — keep meals lighter and simpler.', meals:[
+    {t:'Breakfast',n:'Veggie omelette',d:'3 eggs, spinach, mushrooms, 1 slice wholegrain toast',c:'~360 kcal'},
+    {t:'Lunch',n:'Grilled chicken wrap',d:'100g chicken, 1 wholegrain wrap, lettuce, tomato, hummus',c:'~460 kcal'},
+    {t:'Dinner',n:'Prawn stir-fry',d:'150g prawns, broccoli, snap peas, garlic, ginger, ½ cup rice',c:'~430 kcal'},
+    {t:'Snack',n:'Mixed berries',d:'1 cup mixed berries, 1 cup Greek yogurt',c:'~180 kcal'}
+  ]},
+  { day:'Sat', tip:'Social day — if out with friends, avoid alcohol & chips.', meals:[
+    {t:'Breakfast',n:'Poached eggs on toast',d:'2 poached eggs, 2 slices wholegrain toast, sliced tomato',c:'~370 kcal'},
+    {t:'Lunch',n:'Salmon salad',d:'120g salmon, mixed leaves, cherry tomatoes, cucumber, olive oil',c:'~440 kcal'},
+    {t:'Dinner',n:'Chicken & sweet potato',d:'120g grilled chicken thigh, roasted sweet potato, green beans',c:'~510 kcal'},
+    {t:'Snack',n:'Hummus & veg sticks',d:'3 tbsp hummus, carrot & celery sticks',c:'~160 kcal'}
+  ]},
+  { day:'Sun', tip:'Meal prep! Cook rice, boil eggs for the week tonight.', meals:[
+    {t:'Breakfast',n:'Full protein breakfast',d:'2 eggs, 2 turkey rashers, mushrooms, tomatoes, 1 slice toast',c:'~400 kcal'},
+    {t:'Lunch',n:'Chicken & rice (big)',d:'Bigger portion — 130g chicken, ¾ cup rice, roasted veg. Fuel for week.',c:'~580 kcal'},
+    {t:'Dinner',n:'Lentil dhal',d:'Big bowl red lentil dhal, ginger & turmeric, 1 slice wholegrain naan',c:'~450 kcal'},
+    {t:'Snack',n:'Banana',d:'1 large banana',c:'~100 kcal'}
+  ]},
+];
+
+const WORKOUTS = [
+  { day:'Mon', type:'Strength', sessions:[
+    {n:'Push-ups',d:'4 × 15 reps',b:'Chest/arms'},
+    {n:'Bodyweight squats',d:'4 × 20 reps',b:'Legs'},
+    {n:'Dumbbell rows',d:'3 × 12 reps each',b:'Back'},
+    {n:'Shoulder press',d:'3 × 12 reps',b:'Shoulders'},
+    {n:'Plank',d:'3 × 45 sec',b:'Core'},
+    {n:'Morning walk',d:'10 min post-workout',b:'Cardio'},
+  ]},
+  { day:'Tue', type:'Cardio', sessions:[
+    {n:'Brisk walk/jog',d:'25 min — Cannon Hill Park route',b:'Fat burn'},
+    {n:'Cycling (static/outdoor)',d:'15 min',b:'Cardio'},
+    {n:'Ab circuit',d:'Crunches + leg raises + plank',b:'Core'},
+  ]},
+  { day:'Wed', type:'Rest + Walk', sessions:[
+    {n:'Active rest',d:'Light 20 min walk at lunch or evening',b:'Recovery'},
+    {n:'Stretching',d:'10 min full body stretch',b:'Flexibility'},
+    {n:'Desk exercises',d:'Every 45 mins throughout work day',b:'NEAT'},
+  ]},
+  { day:'Thu', type:'Strength', sessions:[
+    {n:'Lunges',d:'4 × 12 each leg',b:'Legs/glutes'},
+    {n:'Push-up variations',d:'3 × 15 (wide, narrow, regular)',b:'Chest'},
+    {n:'Dumbbell curls',d:'3 × 15',b:'Biceps'},
+    {n:'Tricep dips',d:'3 × 12 (on chair)',b:'Triceps'},
+    {n:'Plank to push-up',d:'3 × 10',b:'Core/chest'},
+    {n:'Morning walk',d:'10 min',b:'Warm-up'},
+  ]},
+  { day:'Fri', type:'Cardio + Core', sessions:[
+    {n:'HIIT (home)',d:'20 min — jumping jacks, burpees, high knees',b:'Fat burn'},
+    {n:'Full ab circuit',d:'Plank + crunches + bicycle + leg raises',b:'Core'},
+    {n:'Cool-down walk',d:'10 min easy walk',b:'Recovery'},
+  ]},
+  { day:'Sat', type:'Active Fun', sessions:[
+    {n:'Walk with bro/sis',d:'30+ min walk — Brindleyplace / park',b:'Steps'},
+    {n:'Bodyweight circuit',d:'20 min if no walk planned',b:'Strength'},
+    {n:'Stretch routine',d:'10 min',b:'Flexibility'},
+  ]},
+  { day:'Sun', type:'Rest', sessions:[
+    {n:'Complete rest OR gentle walk',d:'20 min easy walk only',b:'Recovery'},
+    {n:'Meal prep',d:'Cook for the week — saves you from bad food choices',b:'Nutrition'},
+    {n:'Hydration focus',d:'Hit 3L water today',b:'Health'},
+  ]},
+];
+
+// ---- STATE ----
+let userData = JSON.parse(localStorage.getItem('fitlife_user') || '{}');
+let logs = JSON.parse(localStorage.getItem('fitlife_logs') || '[]');
+
+// ---- WELCOME ----
+function saveWelcome() {
+  const name = document.getElementById('w-name').value.trim() || 'Friend';
+  const weight = parseFloat(document.getElementById('w-weight').value) || 90;
+  const target = parseFloat(document.getElementById('w-target').value) || 75;
+  userData = { name, startWeight: weight, currentWeight: weight, targetWeight: target, age: '', startDate: new Date().toISOString() };
+  saveUserData();
+  document.getElementById('welcome').classList.add('hidden');
+  document.getElementById('app').style.display = 'flex';
+  initApp();
+}
+
+function saveUserData() { localStorage.setItem('fitlife_user', JSON.stringify(userData)); }
+
+// ---- INIT ----
+function initApp() {
+  if (!userData.name) {
+    document.getElementById('welcome').classList.remove('hidden');
+    document.getElementById('app').style.display = 'none';
+    return;
+  }
+  document.getElementById('welcome').classList.add('hidden');
+  document.getElementById('app').style.display = 'flex';
+  updateHome();
+  buildDietTabs();
+  buildWorkoutTabs();
+  renderProgress();
+  loadProfile();
+}
+
+// ---- HOME ----
+function updateHome() {
+  const h = new Date().getHours();
+  const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('home-greeting').textContent = `${greet}, ${userData.name || 'Friend'} 👋`;
+  const cw = userData.currentWeight || 90;
+  const tw = userData.targetWeight || 75;
+  const sw = userData.startWeight || 90;
+  document.getElementById('stat-cw').textContent = cw + ' kg';
+  document.getElementById('stat-tw').textContent = tw + ' kg';
+  const lost = Math.max(0, sw - cw);
+  document.getElementById('stat-lost').textContent = lost.toFixed(1) + ' kg';
+  document.getElementById('prog-start').textContent = sw + ' kg';
+  document.getElementById('prog-end').textContent = tw + ' kg';
+  const total = sw - tw;
+  const pct = total > 0 ? Math.min(100, Math.round((lost / total) * 100)) : 0;
+  document.getElementById('prog-pct').textContent = pct + '%';
+  document.getElementById('prog-bar').style.width = pct + '%';
+  // streak
+  const streak = calcStreak();
+  document.getElementById('stat-days').textContent = streak;
+}
+
+function calcStreak() {
+  if (!logs.length) return 0;
+  const sorted = [...logs].sort((a,b) => new Date(b.date)-new Date(a.date));
+  let streak = 0;
+  let d = new Date(); d.setHours(0,0,0,0);
+  for (let i = 0; i < 365; i++) {
+    const ds = d.toISOString().slice(0,10);
+    if (sorted.find(l => l.date.slice(0,10) === ds)) { streak++; d.setDate(d.getDate()-1); }
+    else break;
+  }
+  return streak;
+}
+
+// ---- DIET TABS ----
+function buildDietTabs() {
+  const tabs = document.getElementById('diet-tabs');
+  tabs.innerHTML = '';
+  MEALS.forEach((m, i) => {
+    const b = document.createElement('button');
+    b.className = 'tab-btn' + (i===0?' active':'');
+    b.textContent = m.day;
+    b.onclick = () => { document.querySelectorAll('#diet-tabs .tab-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); renderDietDay(i); };
+    tabs.appendChild(b);
+  });
+  renderDietDay(0);
+}
+
+function renderDietDay(i) {
+  const d = MEALS[i];
+  let h = `<div class="tip"><strong>Tip:</strong> ${d.tip}</div>`;
+  d.meals.forEach(m => {
+    h += `<div class="meal-block"><h3>${m.t}: ${m.n}</h3><p>${m.d}</p><div class="meal-cal">${m.c}</div></div>`;
+  });
+  document.getElementById('diet-content').innerHTML = h;
+}
+
+// ---- WORKOUT TABS ----
+function buildWorkoutTabs() {
+  const tabs = document.getElementById('workout-tabs');
+  tabs.innerHTML = '';
+  WORKOUTS.forEach((w, i) => {
+    const b = document.createElement('button');
+    b.className = 'tab-btn' + (i===0?' active':'');
+    b.textContent = w.day;
+    b.onclick = () => { document.querySelectorAll('#workout-tabs .tab-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); renderWorkoutDay(i); };
+    tabs.appendChild(b);
+  });
+  renderWorkoutDay(0);
+}
+
+function renderWorkoutDay(i) {
+  const w = WORKOUTS[i];
+  let h = `<div class="card-title" style="margin-bottom:12px;">${w.day} — <span class="pill pill-cyan">${w.type}</span></div><div class="card">`;
+  w.sessions.forEach((s,j) => {
+    h += `<div class="workout-item"><div class="w-num">${j+1}</div><div class="w-body"><strong>${s.n}</strong><span>${s.d}</span></div><div class="w-badge">${s.b}</div></div>`;
+  });
+  h += `</div>`;
+  document.getElementById('workout-content').innerHTML = h;
+}
+
+// ---- PROGRESS ----
+function logEntry() {
+  const w = parseFloat(document.getElementById('log-weight').value);
+  if (!w) { alert('Please enter your weight'); return; }
+  const feel = document.getElementById('log-feel').value;
+  const note = document.getElementById('log-note').value;
+  const entry = { date: new Date().toISOString(), weight: w, feel, note };
+  logs.unshift(entry);
+  localStorage.setItem('fitlife_logs', JSON.stringify(logs));
+  userData.currentWeight = w;
+  saveUserData();
+  document.getElementById('log-weight').value = '';
+  document.getElementById('log-note').value = '';
+  renderProgress();
+  updateHome();
+  alert('Logged! Keep going 💪');
+}
+
+function renderProgress() {
+  // milestones
+  const sw = userData.startWeight || 90;
+  const cw = userData.currentWeight || 90;
+  const lost = sw - cw;
+  const ms = [
+    { label:'Face slimmer', target:3, time:'~4 weeks' },
+    { label:'Jaw defined', target:7, time:'~2 months' },
+    { label:'Flat stomach', target:13, time:'~4 months' },
+    { label:'Six pack', target:18, time:'~6 months' },
+  ];
+  let mh = '';
+  ms.forEach(m => {
+    const done = lost >= m.target;
+    mh += `<div class="tl-item ${done?'done':''}"><h4>${done?'✅ ':''}${m.label}</h4><p>${m.time} • Lose ${m.target}kg${done?' — Achieved! 🎉':` — ${Math.max(0,(m.target-lost)).toFixed(1)}kg to go`}</p></div>`;
+  });
+  document.getElementById('milestones-list').innerHTML = mh;
+
+  // log history
+  const lh = document.getElementById('log-history');
+  if (!logs.length) {
+    lh.innerHTML = '<div class="empty-state"><span>📋</span>No entries yet. Log your first weight above!</div>';
+    return;
+  }
+  let html = '';
+  logs.slice(0,20).forEach(l => {
+    const d = new Date(l.date);
+    const prev = logs[logs.indexOf(l)+1];
+    const diff = prev ? (l.weight - prev.weight).toFixed(1) : null;
+    const diffColor = diff < 0 ? 'var(--green)' : diff > 0 ? 'var(--red)' : 'var(--text2)';
+    html += `<div class="log-entry">
+      <div class="log-date"><strong>${d.getDate()}</strong>${d.toLocaleString('en',{month:'short'})}</div>
+      <div class="log-body">
+        <strong>${l.feel} ${l.weight} kg ${diff!==null?`<span style="color:${diffColor};font-size:12px;">${diff>0?'+':''}${diff}kg</span>`:''}</strong>
+        <span>${l.note||'No notes'}</span>
+      </div>
+    </div>`;
+  });
+  lh.innerHTML = html;
+}
+
+function confirmReset() {
+  if (confirm('Reset all data? This cannot be undone.')) {
+    localStorage.clear();
+    location.reload();
+  }
+}
+
+// ---- PROFILE ----
+function loadProfile() {
+  document.getElementById('p-name').value = userData.name || '';
+  document.getElementById('p-weight').value = userData.currentWeight || '';
+  document.getElementById('p-target').value = userData.targetWeight || '';
+  document.getElementById('p-age').value = userData.age || '';
+  updateTimeline();
+}
+
+function saveProfile() {
+  userData.name = document.getElementById('p-name').value;
+  userData.currentWeight = parseFloat(document.getElementById('p-weight').value) || userData.currentWeight;
+  userData.targetWeight = parseFloat(document.getElementById('p-target').value) || userData.targetWeight;
+  userData.age = document.getElementById('p-age').value;
+  saveUserData();
+  updateHome();
+  updateTimeline();
+  alert('Profile saved ✓');
+}
+
+function updateTimeline() {
+  const sw = userData.startWeight || 90;
+  const cw = userData.currentWeight || 90;
+  const lost = sw - cw;
+  const targets = [3,7,13,18];
+  ['tl1','tl2','tl3','tl4'].forEach((id,i) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('done', lost >= targets[i]);
+  });
+}
+
+// ---- NAV ----
+function showScreen(name, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('screen-wrap').scrollTop = 0;
+}
+
+// ---- BOOT ----
+window.onload = () => {
+  if (userData.name) {
+    document.getElementById('welcome').classList.add('hidden');
+    document.getElementById('app').style.display = 'flex';
+    initApp();
+  }
+  // set today's tab
+  const todayIdx = new Date().getDay();
+  const mapped = [6,0,1,2,3,4,5][todayIdx]; // JS Sun=0 → our Mon=0
+};
+</script>
+</body>
+</html>
